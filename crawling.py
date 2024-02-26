@@ -47,7 +47,7 @@ try:
 
         # 페이지를 조금씩 내리는 스크롤 (예: 100픽셀씩)
         # scroll_position += (new_height - last_height) * 2 / 5
-        scroll_position += 500
+        scroll_position += 300
         driver.execute_script(f"window.scrollTo(0, {scroll_position});")
 
         # 새로운 페이지 콘텐츠 로드를 기다림
@@ -72,13 +72,13 @@ try:
 
 
     # 'component_container__CTlNd' 클래스를 가진 section 요소 찾기
-    component_container = soup.find_all('section', {'class','lives_section__xSjJH'})
+    component_container = soup.find_all('section', {'class','component_section__lGX4U'})
 
     # 시청자 수를 저장할 리스트 초기화
     streamer_list = []
 
     # 각 파트너 항목에서 시청자 수 추출
-    streamer_items = component_container[0].find_all('li', {'class','component_item__ynD21'})
+    streamer_items = component_container[0].find_all('li', {'class','component_item__WsLOa'})
     index = 0
     for item in streamer_items:
         # 'video_card_badge__w02UD' 클래스를 가진 요소의 텍스트 추출 - 시청자 수
@@ -95,6 +95,28 @@ try:
         streamer_name = item.find('span', {'class', 'name_text__yQG50'})
         if streamer_name:
             data.append(streamer_name.text.strip())
+
+        click_streamer = item.find('a', {'class', 'video_card_image__yHXqv'})
+
+        # print(click_streamer.get('href'))
+
+        # <a> 태그의 href 속성 값을 가져옴
+        href_value = click_streamer.get('href')
+
+        # print(href_value)
+
+        # 자바스크립트를 사용하여 새 탭에서 href URL 열기
+        driver.execute_script(f"window.open('https://chzzk.naver.com' + '{href_value}');")
+
+        # 새 탭으로 스위치
+        driver.switch_to.window(driver.window_handles[1])
+
+        channel_profile = driver.find_element(By.CLASS_NAME, 'channel_profile_cell__kkiQb')
+
+        data.append(channel_profile.text)
+
+        driver.close()  # 새 탭 닫기
+        driver.switch_to.window(driver.window_handles[0])  # 원래 탭으로 스위치
 
         # 'video_card_title__Amjk2' 클래스를 가진 요소의 텍스트 추출 - 제목
         live_title = item.find('a', {'class', 'video_card_title__Amjk2'})
@@ -123,7 +145,7 @@ try:
 
 
     # 결과 출력
-    print(tabulate(streamer_list, headers=["번호", "방송인", "제목", "시청자 수", "태그", "썸네일"]))
+    print(tabulate(streamer_list, headers=["번호", "방송인", "팔로우", "제목", "시청자 수", "태그", "썸네일"]))
 
     # 브라우저 종료
     driver.quit()
