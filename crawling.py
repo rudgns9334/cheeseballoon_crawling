@@ -109,13 +109,13 @@ try:
         # driver.implicitly_wait(2000)
         # time.sleep(5)
 
-        # wait = WebDriverWait(driver, 10).until_not(
-        #     EC.text_to_be_present_in_element((By.XPATH, "//*[@id='player_area']/div[2]/div[2]/ul/li[2]/span"),"")
-        # )
-
         wait = WebDriverWait(driver, 10).until_not(
-            EC.text_to_be_present_in_element((By.XPATH, "//*[@id = 'nAllViewer']"),"0"), "ok")
-        print(wait)
+            EC.text_to_be_present_in_element((By.XPATH, "//*[@id='player_area']/div[2]/div[2]/ul/li[2]/span"),"")
+        )
+
+        # wait = WebDriverWait(driver, 10).until_not(
+        #     EC.text_to_be_present_in_element((By.XPATH, "//*[@id = 'nAllViewer']"),"0"), "ok")
+        # print(wait)
 
         streamer_follow = driver.find_element(By.XPATH, "//li[@class='boomark_cnt']")
         bookmark = streamer_follow.find_element(By.TAG_NAME, "span")
