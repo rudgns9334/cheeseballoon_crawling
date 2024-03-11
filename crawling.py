@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from tabulate import tabulate
@@ -34,12 +35,6 @@ try:
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
 
-    # 스크롤을 위한 대기 시간 설정
-    SCROLL_PAUSE_TIME = 2
-
-    # 페이지 스크롤 다운을 위한 루프
-    scroll_position = 0
-    last_height = 0
     while True:
 
         button = driver.find_element(By.XPATH, "//button[.//span[text()='더보기']]")
@@ -82,14 +77,6 @@ try:
             count = re.sub(r'\D', '', viewer_count.text.strip())
             if int(count) < 50:
                 break
-        data = []
-        index += 1
-        data.append(index)
-
-        # 'name_text__yQG50' 클래스를 가진 요소의 텍스트 추출 - 방송인 이름
-        streamer_name = item.find_element(By.CLASS_NAME, "nick")
-        if streamer_name:
-            data.append(streamer_name.text.strip())
 
         click_streamer = item.find_element(By.CLASS_NAME, "thumbs-box")
         click_live = click_streamer.find_element(By.TAG_NAME, "a")
@@ -109,18 +96,53 @@ try:
         # driver.implicitly_wait(2000)
         # time.sleep(5)
 
-        wait = WebDriverWait(driver, 10).until_not(
-            EC.text_to_be_present_in_element((By.XPATH, "//*[@id='player_area']/div[2]/div[2]/ul/li[2]/span"),"")
-        )
+        # wait = WebDriverWait(driver, 10).until_not(
+        #     EC.text_to_be_present_in_element((By.XPATH, "//*[@id='player_area']/div[2]/div[2]/ul/li[2]/span"),''), "ok"
+        # )
+        # if driver.find_element(By.XPATH, "//*[@id='stop_screen']/dl/dd[2]/a"):
+        #     live_btn = driver.find_element(By.XPATH, "//*[@id='stop_screen']/dl/dd[2]/a")
+        #     live_btn.click()
 
+        try:
+            terminate_live = WebDriverWait(driver, 5).until(
+                EC.text_to_be_present_in_element((By.XPATH, "//*[@id='notBroadingArea']/div[1]/strong"), "종료된 방송입니다.")
+            )
+            print("방송이 종료되었습니다.")
+            continue
+
+        except TimeoutException:
+            # 버튼이 지정된 시간 내에 나타나지 않으면 실행을 계속
+            print("방송 중입니다...")
+
+        try:
+            live_btn = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.XPATH, "//*[@id='stop_screen']/dl/dd[2]/a"))
+            )
+            # 버튼이 화면에 나타나면 클릭
+            live_btn.click()
+        except TimeoutException:
+            # 버튼이 지정된 시간 내에 나타나지 않으면 실행을 계속
+            print("클릭할 수 없습니다.")
+
+        WebDriverWait(driver, 1000).until(
+            lambda x: x.find_element(By.XPATH, "//*[@id='player_area']/div[2]/div[2]/ul/li[2]/span").get_attribute('innerHTML').strip() != ""
+        )
         # wait = WebDriverWait(driver, 10).until_not(
         #     EC.text_to_be_present_in_element((By.XPATH, "//*[@id = 'nAllViewer']"),"0"), "ok")
-        # print(wait)
+        # print(wait.get_attribute('innerHTML'))
+
+        data = []
+        index += 1
+        data.append(index)
+
+        streamer_name = driver.find_element(By.XPATH, "//*[@id='player_area']/div[2]/div[2]/div[1]")
+        if streamer_name:
+            data.append(streamer_name.text.strip())
 
         streamer_follow = driver.find_element(By.XPATH, "//li[@class='boomark_cnt']")
         bookmark = streamer_follow.find_element(By.TAG_NAME, "span")
         if bookmark:
-            print(bookmark.text.strip())
+            # print(bookmark.text.strip())
             data.append(bookmark.text.strip())
         else:
             data.append("없음")
@@ -136,7 +158,7 @@ try:
 
         # 시청자 수 데이터
         streamer_viewer = driver.find_element(By.CLASS_NAME, "broadcast_viewer_cnt")
-        print(streamer_viewer.text.strip())
+        # print(streamer_viewer.text.strip())
         data.append(streamer_viewer.text.strip())
 
         view = driver.find_element(By.CLASS_NAME, "detail_view")
@@ -144,7 +166,7 @@ try:
         detail_view = view.find_elements(By.TAG_NAME, "li")
 
         category = detail_view[1].find_element(By.TAG_NAME, "span").text.strip()
-        print(category)
+        # print(category)
         data.append(category)
 
         driver.close()  # 새 탭 닫기
@@ -185,5 +207,6 @@ try:
 
     # 브라우저 종료
     driver.quit()
+
 except Exception as e:
     print(e)
